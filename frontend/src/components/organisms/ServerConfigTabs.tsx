@@ -12,6 +12,7 @@ const LogsTab = dynamic(() => import("../molecules/Tabs/LogsTab").then(mod => mo
 const CommandsTab = dynamic(() => import("../molecules/Tabs/CommandsTab").then(mod => mod.CommandsTab));
 const AdvancedTab = dynamic(() => import("../molecules/Tabs/AdvancedTab").then(mod => mod.AdvancedTab));
 const ModsTab = dynamic(() => import("../molecules/Tabs/ModsTab").then(mod => mod.ModsTab));
+const ModLibraryTab = dynamic(() => import("../molecules/Tabs/ModLibraryTab").then(mod => mod.ModLibraryTab));
 const PluginsTab = dynamic(() => import("../molecules/Tabs/PluginsTab").then(mod => mod.PluginsTab));
 const ResourcesTab = dynamic(() => import("../molecules/Tabs/ResourcesTab").then(mod => mod.ResourcesTab));
 const GeneralSettingsTab = dynamic(() => import("../molecules/Tabs/GeneralSettingsTab").then(mod => mod.GeneralSettingsTab));
@@ -24,7 +25,7 @@ const ScheduledTasksTab = dynamic(() => import("../molecules/Tabs/ScheduledTasks
 
 // Fixed list of every possible tab value, used only to validate the URL hash
 // regardless of which tabs are currently visible for this edition/type.
-const ALL_TAB_VALUES = ["type", "general", "resources", "bedrock", "addons", "mods", "plugins", "advanced", "logs", "commands", "files", "metrics", "tasks"];
+const ALL_TAB_VALUES = ["type", "general", "resources", "bedrock", "addons", "mods", "mod-library", "plugins", "advanced", "logs", "commands", "files", "metrics", "tasks"];
 
 interface ServerConfigTabsProps {
   readonly serverId: string;
@@ -63,6 +64,9 @@ export const ServerConfigTabs: FC<ServerConfigTabsProps> = ({ serverId, config, 
     { value: "bedrock", label: t("bedrock"), icon: Smartphone, group: "config", show: isBedrock, disabled: isServerRunning },
     { value: "addons", label: t("addons"), icon: Package, group: "config", show: isBedrock, disabled: isServerRunning },
     { value: "mods", label: t("mods"), icon: Package, group: "config", show: showModsTab, disabled: isServerRunning },
+    // Unlike its sibling "mods" tab, this stays enabled while the server is running:
+    // browsing/staging/downloading mod jars is explicitly meant to work ahead of the next restart.
+    { value: "mod-library", label: t("modLibrary"), icon: Package, group: "config", show: showModsTab, disabled: false },
     { value: "plugins", label: t("plugins"), icon: Layers, group: "config", show: showPluginsTab, disabled: isServerRunning },
     { value: "advanced", label: t("advanced"), icon: Code, group: "config", show: true, disabled: isServerRunning },
     { value: "logs", label: t("logs"), icon: ScrollText, group: "operation", show: true, disabled: false },
@@ -243,6 +247,12 @@ export const ServerConfigTabs: FC<ServerConfigTabsProps> = ({ serverId, config, 
               {showModsTab && (
                 <TabsContent value="mods" className="space-y-4 mt-0">
                   <ModsTab serverId={serverId} config={config} updateConfig={updateConfig} />
+                </TabsContent>
+              )}
+
+              {showModsTab && (
+                <TabsContent value="mod-library" className="space-y-4 mt-0">
+                  <ModLibraryTab serverId={serverId} config={config} refreshToken={refreshToken} />
                 </TabsContent>
               )}
 
