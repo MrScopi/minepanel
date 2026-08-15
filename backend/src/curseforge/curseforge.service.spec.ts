@@ -90,4 +90,71 @@ describe('CurseforgeService', () => {
       }),
     ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
   });
+
+  it('resolveVersionsForMod should normalize files into versions', async () => {
+    mockClient.get.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 5001,
+            displayName: '2.0.0',
+            fileName: 'fabric-api-2.0.0.jar',
+            fileDate: '2026-02-01T00:00:00Z',
+            downloadUrl: 'https://example.com/fabric-api-2.0.0.jar',
+            gameVersions: ['1.21.4', 'Fabric'],
+            dependencies: [{ modId: 306612, relationType: 3 }],
+          },
+        ],
+      },
+    });
+
+    const versions = await service.resolveVersionsForMod('api-key', 100);
+
+    expect(versions).toHaveLength(1);
+    expect(versions[0]).toMatchObject({
+      provider: 'curseforge',
+      versionId: '5001',
+      versionNumber: '2.0.0',
+      fileName: 'fabric-api-2.0.0.jar',
+      downloadUrl: 'https://example.com/fabric-api-2.0.0.jar',
+      mcVersions: ['1.21.4'],
+      loaders: ['fabric'],
+      dependencies: [{ projectId: '306612', dependencyType: 'required' }],
+    });
+  });
+
+  it('getFileChangelog should return the changelog body', async () => {
+    mockClient.get.mockResolvedValue({ data: { data: 'Fixed a crash' } });
+
+    const changelog = await service.getFileChangelog('api-key', 100, 5001);
+
+    expect(mockClient.get).toHaveBeenCalledWith('/mods/100/files/5001/changelog');
+    expect(changelog).toBe('Fixed a crash');
+  });
+
+  it('getFileChangelog should return an empty string for a missing changelog', async () => {
+    mockClient.get.mockRejectedValue({ response: { status: 404 } });
+    (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
+
+    const changelog = await service.getFileChangelog('api-key', 100, 9999);
+
+    expect(changelog).toBe('');
+  });
+
+  it('resolveModBySlug should return the matching mod', async () => {
+    mockClient.get.mockResolvedValue({
+      data: { data: [{ id: 100, slug: 'fabric-api', name: 'Fabric API' }] },
+    });
+
+    const mod = await service.resolveModBySlug('api-key', 'fabric-api');
+
+    expect(mockClient.get).toHaveBeenCalledWith('/mods/search', expect.objectContaining({ params: expect.objectContaining({ slug: 'fabric-api' }) }));
+    expect(mod).toMatchObject({ id: 100, slug: 'fabric-api' });
+  });
+
+  it('resolveModBySlug should 404 when no mod matches', async () => {
+    mockClient.get.mockResolvedValue({ data: { data: [] } });
+
+    await expect(service.resolveModBySlug('api-key', 'unknown-slug')).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
+  });
 });

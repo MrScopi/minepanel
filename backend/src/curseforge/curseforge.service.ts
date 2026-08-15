@@ -139,6 +139,29 @@ export interface NormalizedModSearchResponse {
   };
 }
 
+export interface NormalizedModVersion {
+  provider: 'modrinth' | 'curseforge';
+  versionId: string;
+  versionNumber: string;
+  datePublished: string;
+  mcVersions: string[];
+  loaders: string[];
+  changelog?: string;
+  downloadUrl: string;
+  fileName: string;
+  dependencies: Array<{ projectId?: string; versionId?: string; dependencyType: string }>;
+}
+
+// CurseForge file relationType: 1=EmbeddedLibrary, 2=OptionalDependency, 3=RequiredDependency, 4=Tool, 5=Incompatible, 6=Include
+const CURSEFORGE_RELATION_TYPE: Record<number, string> = {
+  1: 'embedded',
+  2: 'optional',
+  3: 'required',
+  4: 'optional',
+  5: 'incompatible',
+  6: 'embedded',
+};
+
 @Injectable()
 export class CurseforgeService {
   private readonly apiClient: AxiosInstance;
@@ -363,6 +386,141 @@ export class CurseforgeService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async getModFiles(apiKey: string, modId: number, params?: { gameVersion?: string }): Promise<CurseForgeModpack['latestFiles']> {
+    if (!apiKey) {
+      throw new HttpException('CurseForge API key not configured', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const client = this.getApiClient(apiKey);
+      const response = await client.get(`/mods/${modId}/files`, {
+        params: {
+          gameVersion: params?.gameVersion,
+          pageSize: 50,
+          index: 0,
+        },
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching CurseForge mod files:', error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          throw new HttpException('Invalid CurseForge API key', HttpStatus.FORBIDDEN);
+        }
+        if (error.response?.status === 404) {
+          throw new HttpException('CurseForge mod not found', HttpStatus.NOT_FOUND);
+        }
+        throw new HttpException(
+          error.response?.data?.message || 'Error fetching mod files',
+          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      throw new HttpException('Error fetching mod files', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async getFileChangelog(apiKey: string, modId: number, fileId: number): Promise<string> {
+    if (!apiKey) {
+      throw new HttpException('CurseForge API key not configured', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const client = this.getApiClient(apiKey);
+      const response = await client.get(`/mods/${modId}/files/${fileId}/changelog`);
+      return response.data?.data ?? '';
+    } catch (error) {
+      console.error('Error fetching CurseForge file changelog:', error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          return '';
+        }
+        throw new HttpException(
+          error.response?.data?.message || 'Error fetching changelog',
+          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      throw new HttpException('Error fetching changelog', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async resolveVersionsForMod(apiKey: string, modId: number, gameVersion?: string): Promise<NormalizedModVersion[]> {
+    const files = await this.getModFiles(apiKey, modId, { gameVersion });
+    return (files ?? [])
+      .map((file) => this.normalizeFile(file))
+      .filter((version): version is NormalizedModVersion => version !== null);
+  }
+
+  async resolveModBySlug(apiKey: string, slug: string): Promise<CurseForgeModpack> {
+    if (!apiKey) {
+      throw new HttpException('CurseForge API key not configured', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const client = this.getApiClient(apiKey);
+      const response = await client.get<CurseForgeSearchResponse>('/mods/search', {
+        params: {
+          gameId: this.MINECRAFT_GAME_ID,
+          classId: this.MODS_CLASS_ID,
+          slug,
+        },
+      });
+
+      const mod = response.data.data?.[0];
+      if (!mod) {
+        throw new HttpException('CurseForge mod not found', HttpStatus.NOT_FOUND);
+      }
+      return mod;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error('Error resolving CurseForge mod by slug:', error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          throw new HttpException('Invalid CurseForge API key', HttpStatus.FORBIDDEN);
+        }
+        throw new HttpException(
+          error.response?.data?.message || 'Error resolving mod',
+          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      throw new HttpException('Error resolving mod', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  private normalizeFile(file: CurseForgeModpack['latestFiles'][number]): NormalizedModVersion | null {
+    if (!file?.downloadUrl) {
+      return null;
+    }
+
+    const loaders = new Set<string>();
+    for (const version of file.gameVersions ?? []) {
+      this.extractLoadersFromGameVersion(version).forEach((loader) => loaders.add(loader));
+    }
+    const mcVersions = (file.gameVersions ?? []).filter((version) => !this.extractLoadersFromGameVersion(version).length && !/^(client|server)$/i.test(version));
+
+    return {
+      provider: 'curseforge',
+      versionId: String(file.id),
+      versionNumber: file.displayName ?? file.fileName,
+      datePublished: file.fileDate,
+      mcVersions,
+      loaders: Array.from(loaders),
+      downloadUrl: file.downloadUrl,
+      fileName: file.fileName,
+      dependencies: (file.dependencies ?? []).map((dependency) => ({
+        projectId: String(dependency.modId),
+        dependencyType: CURSEFORGE_RELATION_TYPE[dependency.relationType] ?? 'optional',
+      })),
+    };
   }
 
   private normalizeMod(mod: CurseForgeModpack): NormalizedModSearchResult {

@@ -24,6 +24,54 @@ export interface NormalizedModSearchResponse {
   };
 }
 
+export interface NormalizedModVersion {
+  provider: 'modrinth' | 'curseforge';
+  versionId: string;
+  versionNumber: string;
+  datePublished: string;
+  mcVersions: string[];
+  loaders: string[];
+  changelog?: string;
+  downloadUrl: string;
+  fileName: string;
+  dependencies: Array<{ projectId?: string; versionId?: string; dependencyType: string }>;
+}
+
+export interface ModrinthProject {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  icon_url?: string;
+  game_versions: string[];
+  loaders: string[];
+  date_modified: string;
+}
+
+interface ModrinthVersionFile {
+  url: string;
+  filename: string;
+  primary: boolean;
+}
+
+interface ModrinthVersionDependency {
+  version_id?: string;
+  project_id?: string;
+  dependency_type: string;
+}
+
+export interface ModrinthVersion {
+  id: string;
+  project_id: string;
+  version_number: string;
+  changelog?: string;
+  date_published: string;
+  game_versions: string[];
+  loaders: string[];
+  files: ModrinthVersionFile[];
+  dependencies: ModrinthVersionDependency[];
+}
+
 interface ModrinthSearchHit {
   project_id: string;
   slug: string;
@@ -114,6 +162,90 @@ export class ModrinthService {
 
       throw new HttpException('Error searching mods', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  async getProject(projectIdOrSlug: string): Promise<ModrinthProject> {
+    try {
+      const response = await this.apiClient.get<ModrinthProject>(`/project/${encodeURIComponent(projectIdOrSlug)}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching Modrinth project:', error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new HttpException('Modrinth project not found', HttpStatus.NOT_FOUND);
+        }
+        throw new HttpException(
+          error.response?.data?.description || 'Error fetching Modrinth project',
+          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      throw new HttpException('Error fetching Modrinth project', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async getProjectVersions(
+    projectIdOrSlug: string,
+    params?: { gameVersions?: string[]; loaders?: string[] },
+  ): Promise<ModrinthVersion[]> {
+    try {
+      const response = await this.apiClient.get<ModrinthVersion[]>(`/project/${encodeURIComponent(projectIdOrSlug)}/version`, {
+        params: {
+          game_versions: params?.gameVersions ? JSON.stringify(params.gameVersions) : undefined,
+          loaders: params?.loaders ? JSON.stringify(params.loaders) : undefined,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching Modrinth project versions:', error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new HttpException('Modrinth project not found', HttpStatus.NOT_FOUND);
+        }
+        throw new HttpException(
+          error.response?.data?.description || 'Error fetching Modrinth versions',
+          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      throw new HttpException('Error fetching Modrinth versions', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async resolveVersionsForProject(
+    projectIdOrSlug: string,
+    params?: { gameVersions?: string[]; loaders?: string[] },
+  ): Promise<NormalizedModVersion[]> {
+    const versions = await this.getProjectVersions(projectIdOrSlug, params);
+    return versions
+      .map((version) => this.normalizeVersion(version))
+      .filter((version): version is NormalizedModVersion => version !== null);
+  }
+
+  private normalizeVersion(version: ModrinthVersion): NormalizedModVersion | null {
+    const primaryFile = version.files.find((file) => file.primary) ?? version.files[0];
+    if (!primaryFile) {
+      return null;
+    }
+
+    return {
+      provider: 'modrinth',
+      versionId: version.id,
+      versionNumber: version.version_number,
+      datePublished: version.date_published,
+      mcVersions: version.game_versions ?? [],
+      loaders: version.loaders ?? [],
+      changelog: version.changelog,
+      downloadUrl: primaryFile.url,
+      fileName: primaryFile.filename,
+      dependencies: (version.dependencies ?? []).map((dependency) => ({
+        projectId: dependency.project_id,
+        versionId: dependency.version_id,
+        dependencyType: dependency.dependency_type,
+      })),
+    };
   }
 
   private normalizeHit(hit: ModrinthSearchHit): NormalizedModSearchResult {
