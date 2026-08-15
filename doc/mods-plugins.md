@@ -516,6 +516,47 @@ environment:
 Always ensure mods from both sources are compatible with your Minecraft version and loader type.
 :::
 
+## Manual Mod Library (Update Tracking)
+
+The **Mod Library** tab helps you track mods you manage by hand — the file-by-file jars in
+`mc-data/mods/` — rather than the auto-downloaded lists above. It's aimed at "vanilla-adjacent"
+servers, for example a lightweight Fabric setup with Geyser/ViaVersion for Bedrock crossplay, where
+you want to know exactly which mods are ready to update before a new Minecraft release.
+
+::: warning Separate from the automatic download lists above
+This is a **different workflow** from the `MODRINTH_PROJECTS` / `CURSEFORGE_FILES` fields
+described earlier on this page. Those re-download their configured mods from scratch on every
+container restart; the Mod Library instead manages individual jar files directly. **Do not track
+the same mod in both places** — if this server also uses `REMOVE_OLD_MODS`-style auto-management,
+it could delete jars that the Mod Library installed.
+:::
+
+### What it does
+
+- Browse or search mods on **Modrinth** and **CurseForge**, or paste a link to a mod's page
+- For each tracked mod, checks:
+  - The latest version matching the server's current Minecraft version
+  - The latest version matching an optional **desired Minecraft version** (e.g. an upcoming release)
+  - The changelog for the version you're about to install
+- Lets you keep free-text **notes** per mod (e.g. "optional, don't block update")
+- Downloads ("stages") a jar into a per-server library, then **applies** it to `mc-data/mods/` in
+  a separate step — so you can prepare updates while the server is running and apply them right
+  before your next restart
+
+### How to use it
+
+1. Open **Edit Server** for a modded Java server and go to the **Mod Library** tab
+2. Optionally set a **desired Minecraft version** to check readiness against an upcoming release
+3. Click **Browse mods** (Modrinth or CurseForge) or paste a mod page link, then **Add to library**
+4. Click **Check for updates** on a mod (or **Check all**) to see the latest matching versions and changelog
+5. Click the download icon next to a version to **stage** it
+6. Click **Apply** to copy the staged jar into `mc-data/mods/` — this takes effect the next time
+   the server (re)starts; a running server keeps using its currently loaded jars until then
+
+Tracked mod metadata (versions, notes, staged/installed state) is stored in
+`servers/<server-id>/mod-library/registry.json`, and staged jars live in
+`servers/<server-id>/mod-library/downloads/` until applied.
+
 ## Plugin Management (Spigot/Paper/etc)
 
 For plugin-based servers (Spigot, Paper, Bukkit, etc.), you can use Spiget:

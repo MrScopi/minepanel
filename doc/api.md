@@ -183,6 +183,24 @@ Host monitoring endpoints:
 - `GET /curseforge/featured`
 - `GET /modrinth/mods/search`
 
+### Mod Library
+
+Per-server manually tracked mods (browse/stage/apply, separate from the auto-download env vars
+above — see [Manual Mod Library](/mods-plugins#manual-mod-library-update-tracking)):
+
+- `GET /mod-library/:serverId`
+- `GET /mod-library/:serverId/search` — query `provider`, `q`, `pageSize`, `index`
+- `GET /mod-library/:serverId/resolve-url` — query `url`, a Modrinth or CurseForge mod page link
+- `POST /mod-library/:serverId/mods` — add a mod to the tracked library
+- `POST /mod-library/:serverId/mods/:modId/check` — refresh available versions for one mod
+- `POST /mod-library/:serverId/check-all` — refresh available versions for every tracked mod
+- `POST /mod-library/:serverId/mods/:modId/stage` — body `{ "versionId": "..." }`, downloads the jar into the library
+- `POST /mod-library/:serverId/mods/:modId/apply` — copies the staged jar into `mc-data/mods/`
+- `POST /mod-library/:serverId/apply-all` — applies every mod with a staged version
+- `PATCH /mod-library/:serverId/mods/:modId/notes` — body `{ "notes"?, "blockUpdate"? }`
+- `PUT /mod-library/:serverId/desired-version` — body `{ "desiredMcVersion": "..." | null }`
+- `DELETE /mod-library/:serverId/mods/:modId` — query `removeFromDisk` (`true`/`false`)
+
 ### World Discovery
 
 Global world library search/import and CurseForge metadata lookup:

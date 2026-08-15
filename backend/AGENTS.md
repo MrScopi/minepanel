@@ -25,6 +25,10 @@ backend/src/
 |- world-discovery/         World import/discovery into global world library
 |- proxy/                   mc-router routes.json generation
 |- modpacks/                Per-server modpack files (.zip/.mrpack) under servers/<id>/modpacks
+|- mod-library/             Manually tracked mods (browse/stage/apply) under servers/<id>/mod-library, separate from the MODRINTH_PROJECTS/CURSEFORGE_FILES auto-download flow
+|- modrinth/                Modrinth search + per-project version/changelog lookups (no API key)
+|- curseforge/              CurseForge search + per-mod version/changelog lookups (per-user API key)
+|- bedrock-addons/          Bedrock behavior/resource pack management (search, import, enable/disable, reorder, sync to world)
 |- system-monitoring/       Host metrics
 |- metrics/                 Per-server CPU/RAM history (1-min sampler, query API)
 |- alerts/                  Per-server Discord alerts (down / high CPU / high RAM), fed by the metrics sampler
@@ -90,6 +94,7 @@ Path and filesystem patterns (critical):
   - `/app/servers/<serverId>/mc-data/`
   - `/app/servers/<serverId>/worlds/`
   - `/app/servers/<serverId>/modpacks/` (mounted read-only at `/modpacks`; `CF_MODPACK_ZIP` and local `.mrpack` paths point here)
+  - `/app/servers/<serverId>/mod-library/` (`registry.json` + `downloads/`; manually tracked mods staged here before being applied into `mc-data/mods/`)
   - `/app/servers/<serverId>/backups/` (if backup enabled, default location)
 - Backup host mount is configurable: `BACKUP_BASE_DIR` (`backupBaseDir`) sets a global host base, and per-server `backupHostDir` overrides it. When set, the backup mount's host side can point outside `${BASE_DIR}` (e.g. a NAS); the backend's `fs.ensureDir` for it is best-effort (Docker creates the bind source if unreachable). See `resolveBackupsHostPath`/`parseBackupHostDir` in `docker-compose.service.ts`.
 - Global world library is reserved under `/app/servers/.world/worlds/`.
@@ -104,6 +109,7 @@ Path and filesystem patterns (critical):
 - `src/docker-compose/docker-compose.service.ts` - compose generation, path-to-volume mapping, server discovery.
 - `src/files/files.service.ts` - path validation and file API boundaries.
 - `src/files/files.controller.ts` - upload/download API behavior.
+- `src/mod-library/mod-library.service.ts` - manually tracked mods: registry.json persistence (same on-disk-JSON precedent as `bedrock-addons`, not the database), version/update checks, stage/apply lifecycle.
 - `src/world-discovery/world-discovery.service.ts` - `.world` library import path.
 - `src/proxy/proxy.service.ts` - proxy routes file path behavior.
 - `src/server-management/auto-scale.controller.ts` - mc-router auto-scaling webhook.
