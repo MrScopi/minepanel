@@ -1618,6 +1618,7 @@ export const es: Record<TranslationKey, string> = {
   modLibraryStage: 'Versión preparada',
   modLibraryApply: 'Aplicar',
   modLibraryApplyAll: 'Aplicar pendientes',
+  modLibraryApplyAllDisabledHint: 'Primero prepara una versión para al menos un mod (icono de descarga junto a una versión) para habilitar esto.',
   modLibraryDelete: 'Dejar de rastrear',
   modLibraryDeleteConfirmTitle: '¿Dejar de rastrear este mod?',
   modLibraryDeleteConfirmDesc: 'Esto lo elimina de la biblioteca de mods.',

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLanguage } from "@/lib/hooks/useLanguage";
 import { mcToast } from "@/lib/utils/minecraft-toast";
 import { ServerConfig } from "@/lib/types/types";
@@ -264,10 +265,23 @@ export const ModLibraryTab: FC<ModLibraryTabProps> = ({ serverId, config, refres
             {checkingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             {t("modLibraryCheckAll")}
           </Button>
-          <Button type="button" variant="minepanel" onClick={handleApplyAll} disabled={busy || !hasPendingApply} className="font-minecraft">
-            {applyingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {t("modLibraryApplyAll")}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={!hasPendingApply ? "cursor-not-allowed" : undefined}>
+                  <Button type="button" variant="minepanel" onClick={handleApplyAll} disabled={busy || !hasPendingApply} className="font-minecraft">
+                    {applyingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {t("modLibraryApplyAll")}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!hasPendingApply ? (
+                <TooltipContent className="max-w-xs bg-gray-800 border-gray-700 text-gray-200">
+                  <p>{t("modLibraryApplyAllDisabledHint")}</p>
+                </TooltipContent>
+              ) : null}
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         <div className="space-y-3">

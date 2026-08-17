@@ -1623,6 +1623,7 @@ export const de: Record<TranslationKey, string> = {
   modLibraryStage: 'Version vorbereitet',
   modLibraryApply: 'Anwenden',
   modLibraryApplyAll: 'Alle ausstehenden anwenden',
+  modLibraryApplyAllDisabledHint: 'Bereite zuerst eine Version für mindestens einen Mod vor (Download-Symbol neben einer Version), um dies zu aktivieren.',
   modLibraryDelete: 'Verfolgung beenden',
   modLibraryDeleteConfirmTitle: 'Verfolgung dieses Mods beenden?',
   modLibraryDeleteConfirmDesc: 'Dies entfernt ihn aus der Mod-Bibliothek.',

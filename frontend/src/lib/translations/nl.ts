@@ -1629,6 +1629,7 @@ export const nl: Record<TranslationKey, string> = {
   modLibraryStage: 'Versie klaargezet',
   modLibraryApply: 'Toepassen',
   modLibraryApplyAll: 'Alle wachtende toepassen',
+  modLibraryApplyAllDisabledHint: 'Bereid eerst een versie voor van minstens één mod (downloadicoon naast een versie) om dit in te schakelen.',
   modLibraryDelete: 'Stoppen met volgen',
   modLibraryDeleteConfirmTitle: 'Stoppen met het volgen van deze mod?',
   modLibraryDeleteConfirmDesc: 'Dit verwijdert de mod uit de modbibliotheek.',

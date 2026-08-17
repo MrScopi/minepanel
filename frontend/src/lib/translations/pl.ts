@@ -1603,6 +1603,7 @@ export const pl: Record<TranslationKey, string> = {
   modLibraryStage: 'Wersja przygotowana',
   modLibraryApply: 'Zastosuj',
   modLibraryApplyAll: 'Zastosuj wszystkie oczekujące',
+  modLibraryApplyAllDisabledHint: 'Najpierw przygotuj wersję dla co najmniej jednego moda (ikona pobierania obok wersji), aby to włączyć.',
   modLibraryDelete: 'Przestań śledzić',
   modLibraryDeleteConfirmTitle: 'Przestać śledzić ten mod?',
   modLibraryDeleteConfirmDesc: 'To usunie go z biblioteki modów.',

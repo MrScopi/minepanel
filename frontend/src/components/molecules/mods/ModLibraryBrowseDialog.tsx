@@ -197,9 +197,6 @@ export function ModLibraryBrowseDialog({
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2 flex-wrap">
-          <Badge variant="secondary" className="text-xs bg-slate-700 text-slate-100">
-            slug: {mod.slug}
-          </Badge>
           {downloads ? (
             <Badge variant="secondary" className="text-xs bg-blue-900/40 text-blue-300">
               {downloads}
@@ -236,8 +233,8 @@ export function ModLibraryBrowseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[82vh] overflow-hidden bg-gray-900 border border-gray-700 text-white p-0">
-        <div className="sticky top-0 z-10 border-b border-gray-700 bg-gray-900 px-6 py-4 space-y-3">
+      <DialogContent className="max-w-5xl h-[85vh] max-h-[85vh] overflow-hidden bg-gray-900 border border-gray-700 text-white p-0 flex flex-col">
+        <div className="shrink-0 border-b border-gray-700 bg-gray-900 px-6 py-4 space-y-3">
           <DialogTitle className="text-xl font-minecraft text-emerald-400 flex items-center gap-2">
             <Search className="h-5 w-5" />
             {t("modLibraryBrowseMods")} - {providerLabel}
@@ -272,7 +269,7 @@ export function ModLibraryBrowseDialog({
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(82vh-210px)] p-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
           {resolvedMod ? (
             <div className="mb-6">
               <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">{t("modLibraryPasteLink")}</p>

@@ -1597,6 +1597,7 @@ export const fr: Record<TranslationKey, string> = {
   modLibraryStage: 'Version préparée',
   modLibraryApply: 'Appliquer',
   modLibraryApplyAll: 'Appliquer tout ce qui est en attente',
+  modLibraryApplyAllDisabledHint: "Préparez d'abord une version pour au moins un mod (icône de téléchargement à côté d'une version) pour activer ceci.",
   modLibraryDelete: 'Arrêter le suivi',
   modLibraryDeleteConfirmTitle: 'Arrêter de suivre ce mod ?',
   modLibraryDeleteConfirmDesc: 'Ceci le retire de la bibliothèque de mods.',

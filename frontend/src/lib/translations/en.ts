@@ -1595,6 +1595,7 @@ export const en = {
   modLibraryStage: 'Version staged',
   modLibraryApply: 'Apply',
   modLibraryApplyAll: 'Apply all pending',
+  modLibraryApplyAllDisabledHint: 'Stage a version for at least one mod first (download icon next to a version) to enable this.',
   modLibraryDelete: 'Stop tracking',
   modLibraryDeleteConfirmTitle: 'Stop tracking this mod?',
   modLibraryDeleteConfirmDesc: 'This removes it from the mod library.',

@@ -1597,6 +1597,7 @@ export const ru: Record<TranslationKey, string> = {
   modLibraryStage: 'Версия подготовлена',
   modLibraryApply: 'Применить',
   modLibraryApplyAll: 'Применить все ожидающие',
+  modLibraryApplyAllDisabledHint: 'Сначала подготовьте версию хотя бы для одного мода (значок загрузки рядом с версией), чтобы включить это.',
   modLibraryDelete: 'Прекратить отслеживание',
   modLibraryDeleteConfirmTitle: 'Прекратить отслеживание этого мода?',
   modLibraryDeleteConfirmDesc: 'Это удалит его из библиотеки модов.',
