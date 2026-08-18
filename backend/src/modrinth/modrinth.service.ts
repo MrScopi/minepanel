@@ -64,6 +64,7 @@ interface ModrinthVersion {
   game_versions: string[];
   loaders: string[];
   files: Array<{ filename: string; primary: boolean }>;
+  changelog?: string;
 }
 
 export interface NormalizedModVersion {
@@ -76,6 +77,7 @@ export interface NormalizedModVersion {
   datePublished?: string;
   gameVersions: string[];
   loaders: string[];
+  changelog?: string;
 }
 
 type ModLoaderName = 'forge' | 'neoforge' | 'fabric' | 'quilt';
@@ -278,6 +280,7 @@ export class ModrinthService {
       datePublished: version.date_published,
       gameVersions: version.game_versions ?? [],
       loaders: version.loaders ?? [],
+      changelog: version.changelog || undefined,
     };
   }
 

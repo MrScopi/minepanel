@@ -36,6 +36,7 @@ export interface ModVersionItem {
   datePublished?: string;
   gameVersions: string[];
   loaders: string[];
+  changelog?: string;
 }
 
 interface BaseSearchParams {
