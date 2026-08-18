@@ -33,6 +33,8 @@ jest.mock('node:util', () => {
 // Import after mocks
 import { ServerManagementService } from './server-management.service';
 import { AlertsService } from '../alerts/alerts.service';
+import { DockerComposeService } from '../docker-compose/docker-compose.service';
+import { ModMetadataService } from '../mod-metadata/mod-metadata.service';
 import * as fs from 'fs-extra';
 
 // Get the mocked promisify result
@@ -40,6 +42,8 @@ const mockExec = jest.requireMock('node:util').promisify();
 
 describe('ServerManagementService', () => {
   let service: ServerManagementService;
+  let mockDockerComposeService: { getServerConfig: jest.Mock; updateServerConfig: jest.Mock };
+  let mockModMetadataService: { consumePendingQueue: jest.Mock; applyQueueToConfig: jest.Mock };
 
   const SERVERS_DIR = '/app/servers';
 
@@ -66,6 +70,16 @@ describe('ServerManagementService', () => {
       markExpectedStop: jest.fn(),
     };
 
+    mockDockerComposeService = {
+      getServerConfig: jest.fn().mockResolvedValue(null),
+      updateServerConfig: jest.fn().mockResolvedValue(null),
+    };
+
+    mockModMetadataService = {
+      consumePendingQueue: jest.fn().mockResolvedValue(null),
+      applyQueueToConfig: jest.fn().mockReturnValue({ cfFiles: '', modrinthProjects: '' }),
+    };
+
     (fs.ensureDirSync as jest.Mock).mockImplementation(() => {});
     (fs.pathExists as jest.Mock).mockResolvedValue(true);
 
@@ -76,6 +90,8 @@ describe('ServerManagementService', () => {
         { provide: getRepositoryToken(Settings), useValue: mockSettingsRepo },
         { provide: DiscordService, useValue: mockDiscordService },
         { provide: AlertsService, useValue: mockAlertsService },
+        { provide: DockerComposeService, useValue: mockDockerComposeService },
+        { provide: ModMetadataService, useValue: mockModMetadataService },
       ],
     }).compile();
 
@@ -186,6 +202,37 @@ describe('ServerManagementService', () => {
 
       expect(result).toBe(false);
     });
+
+    it('should apply a pending mod queue before starting', async () => {
+      (fs.pathExists as jest.Mock).mockResolvedValue(true);
+      (fs.readdir as unknown as jest.Mock).mockResolvedValue(['world']);
+      mockExec.mockResolvedValue({ stdout: '' });
+
+      const queue = [{ provider: 'modrinth' as const, ref: 'sodium', action: 'add' as const, version: 'v1', label: 'Sodium' }];
+      mockModMetadataService.consumePendingQueue.mockResolvedValue(queue);
+      mockDockerComposeService.getServerConfig.mockResolvedValue({ id: 'myserver', cfFiles: '', modrinthProjects: '' });
+      mockModMetadataService.applyQueueToConfig.mockReturnValue({ cfFiles: '', modrinthProjects: 'sodium:v1' });
+
+      const result = await service.startServer('myserver');
+
+      expect(result).toBe(true);
+      expect(mockModMetadataService.consumePendingQueue).toHaveBeenCalledWith('myserver');
+      expect(mockModMetadataService.applyQueueToConfig).toHaveBeenCalledWith('', '', queue);
+      expect(mockDockerComposeService.updateServerConfig).toHaveBeenCalledWith('myserver', { cfFiles: '', modrinthProjects: 'sodium:v1' });
+    });
+
+    it('should skip config updates when there is no pending mod queue', async () => {
+      (fs.pathExists as jest.Mock).mockResolvedValue(true);
+      (fs.readdir as unknown as jest.Mock).mockResolvedValue(['world']);
+      mockExec.mockResolvedValue({ stdout: '' });
+      mockModMetadataService.consumePendingQueue.mockResolvedValue(null);
+
+      const result = await service.startServer('myserver');
+
+      expect(result).toBe(true);
+      expect(mockDockerComposeService.getServerConfig).not.toHaveBeenCalled();
+      expect(mockDockerComposeService.updateServerConfig).not.toHaveBeenCalled();
+    });
   });
 
   describe('stopServer', () => {
@@ -214,6 +261,22 @@ describe('ServerManagementService', () => {
       const result = await service.restartServer('myserver');
 
       expect(result).toBe(true);
+    });
+
+    it('should apply a pending mod queue before restarting', async () => {
+      (fs.pathExists as jest.Mock).mockResolvedValue(true);
+      mockExec.mockResolvedValue({ stdout: '' });
+
+      const queue = [{ provider: 'curseforge' as const, ref: 'jei', action: 'remove' as const, label: 'JEI' }];
+      mockModMetadataService.consumePendingQueue.mockResolvedValue(queue);
+      mockDockerComposeService.getServerConfig.mockResolvedValue({ id: 'myserver', cfFiles: 'jei:123', modrinthProjects: '' });
+      mockModMetadataService.applyQueueToConfig.mockReturnValue({ cfFiles: '', modrinthProjects: '' });
+
+      const result = await service.restartServer('myserver');
+
+      expect(result).toBe(true);
+      expect(mockModMetadataService.consumePendingQueue).toHaveBeenCalledWith('myserver');
+      expect(mockDockerComposeService.updateServerConfig).toHaveBeenCalledWith('myserver', { cfFiles: '', modrinthProjects: '' });
     });
   });
 

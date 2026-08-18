@@ -12,6 +12,8 @@ import { DiscordService, ServerEventType, SupportedLanguage } from 'src/discord/
 import { ConfigService } from '@nestjs/config';
 import { ServerEdition, SHUTDOWN_BUFFER_SECONDS } from './dto/server-config.model';
 import { AlertsService } from 'src/alerts/alerts.service';
+import { DockerComposeService } from 'src/docker-compose/docker-compose.service';
+import { ModMetadataService } from 'src/mod-metadata/mod-metadata.service';
 
 const execAsync = promisify(exec);
 
@@ -112,12 +114,34 @@ export class ServerManagementService {
     private readonly settingsRepo: Repository<Settings>,
     private readonly discordService: DiscordService,
     private readonly alertsService: AlertsService,
+    private readonly dockerComposeService: DockerComposeService,
+    private readonly modMetadataService: ModMetadataService,
   ) {
     this.SERVERS_DIR = this.configService.get('serversDir');
     this.BASE_DIR = this.configService.get('baseDir');
     this.COMPOSE_PROJECT = this.configService.get<string>('composeProject')?.trim() || undefined;
     fs.ensureDirSync(this.SERVERS_DIR);
     fs.ensureDirSync(this.getGlobalWorldsPath());
+  }
+
+  // Applies any mods queued from the Mod Watch tab into CURSEFORGE_FILES/MODRINTH_PROJECTS right
+  // before the container comes up, so the queue always reflects "at the next restart" regardless
+  // of which path triggered it (manual start, restart, or a scheduled task). Never throws — a
+  // failure here should not block the actual start; it just leaves the queue for next time.
+  private async applyPendingModQueue(serverId: string): Promise<void> {
+    try {
+      const queue = await this.modMetadataService.consumePendingQueue(serverId);
+      if (!queue || queue.length === 0) return;
+
+      const config = await this.dockerComposeService.getServerConfig(serverId);
+      if (!config) return;
+
+      const { cfFiles, modrinthProjects } = this.modMetadataService.applyQueueToConfig(config.cfFiles ?? '', config.modrinthProjects ?? '', queue);
+      await this.dockerComposeService.updateServerConfig(serverId, { cfFiles, modrinthProjects });
+      this.logger.log(`Applied ${queue.length} queued mod change(s) for server ${serverId}`);
+    } catch (error) {
+      this.logger.error(`Failed to apply pending mod queue for server ${serverId}`, error);
+    }
   }
 
   private validateServerId(serverId: string): boolean {
@@ -745,6 +769,7 @@ export class ServerManagementService {
       }
 
       this.alertsService.markExpectedStop(serverId);
+      await this.applyPendingModQueue(serverId);
       await this.execComposeDown(serverId);
       await this.execComposeCommand(serverId, DOCKER_COMMANDS.COMPOSE_UP);
 
@@ -1496,6 +1521,8 @@ export class ServerManagementService {
       if (edition === 'BEDROCK') {
         await this.fixBedrockPermissions(serverId);
       }
+
+      await this.applyPendingModQueue(serverId);
 
       if ((await this.getServerStatus(serverId)) !== 'not_found') {
         await this.execComposeDown(serverId);

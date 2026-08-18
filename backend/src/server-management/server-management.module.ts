@@ -10,11 +10,12 @@ import { ProxyModule } from 'src/proxy/proxy.module';
 import { BedrockAddonsModule } from 'src/bedrock-addons/bedrock-addons.module';
 import { Settings } from 'src/users/entities/settings.entity';
 import { AlertsModule } from 'src/alerts/alerts.module';
+import { ModMetadataService } from 'src/mod-metadata/mod-metadata.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Settings]), DiscordModule, UsersModule, ProxyModule, BedrockAddonsModule, AlertsModule],
   controllers: [ServerManagementController, AutoScaleController],
-  providers: [ServerManagementService, DockerComposeService],
+  providers: [ServerManagementService, DockerComposeService, ModMetadataService],
   exports: [ServerManagementService, DockerComposeService],
 })
 export class ServerManagementModule {}
