@@ -104,7 +104,7 @@ Tooling / build (Next.js 16):
 - `src/components/molecules/Tabs/ScheduledTasksTab.tsx` - scheduled tasks CRUD.
 - `src/components/molecules/Tabs/ModWatchTab.tsx` - pinned-mod notes, desired-version compatibility check, and on-demand changelog history; stays enabled while the server is running (unlike the Mods tab).
 - `src/lib/store/servers-store.ts`
-- `src/lib/translations/index.ts` and language files (`en.ts`, `es.ts`, `nl.ts`, `de.ts`, `fr.ts`, `pl.ts`, `ru.ts`)
+- `src/lib/translations/index.ts` and language files (`en.ts`, `es.ts`, `nl.ts`, `de.ts`, `fr.ts`, `pl.ts`, `ru.ts`, `pt.ts`)
 - `eslint.config.mjs` - flat ESLint config (eslint-config-next 16).
 - `next.config.ts` - Turbopack config, standalone output, image/compiler options.
 - `package.json`
@@ -138,7 +138,7 @@ Routing and data flow:
 
 i18n:
 
-- Any new user-facing key must be added to all active dictionaries (`en`, `es`, `nl`, `de`, `fr`, `pl`, `ru`); the build fails if a dictionary is missing a key.
+- Any new user-facing key must be added to all active dictionaries (`en`, `es`, `nl`, `de`, `fr`, `pl`, `ru`, `pt`); the build fails if a dictionary is missing a key.
 - Register a new locale only in `src/lib/translations/index.ts`; `languageOptions` updates both selectors and the settings service uses `Language` from that registry.
 - Keep key naming consistent; avoid one-off names that break translation structure.
 
