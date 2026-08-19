@@ -10,12 +10,15 @@ import { ProxyModule } from 'src/proxy/proxy.module';
 import { BedrockAddonsModule } from 'src/bedrock-addons/bedrock-addons.module';
 import { Settings } from 'src/users/entities/settings.entity';
 import { AlertsModule } from 'src/alerts/alerts.module';
-import { ModMetadataService } from 'src/mod-metadata/mod-metadata.service';
+import { ModMetadataModule } from 'src/mod-metadata/mod-metadata.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Settings]), DiscordModule, UsersModule, ProxyModule, BedrockAddonsModule, AlertsModule],
+  // ModMetadataModule (not just ModMetadataService) so ServerManagementService shares the same
+  // ModMetadataService instance as ModMetadataController — the queue's per-server lock only holds
+  // within a single instance.
+  imports: [TypeOrmModule.forFeature([Settings]), DiscordModule, UsersModule, ProxyModule, BedrockAddonsModule, AlertsModule, ModMetadataModule],
   controllers: [ServerManagementController, AutoScaleController],
-  providers: [ServerManagementService, DockerComposeService, ModMetadataService],
+  providers: [ServerManagementService, DockerComposeService],
   exports: [ServerManagementService, DockerComposeService],
 })
 export class ServerManagementModule {}
